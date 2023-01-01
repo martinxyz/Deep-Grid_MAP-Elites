@@ -10,21 +10,22 @@ namespace sferes {
       {
       public:	
 	
-	// Return total and relative fitnesses
+	// Return total and relative fitnesses   // <--
 	template<typename cell_t> std::tuple<float, std::vector<float>> relative_fitness(cell_t cell) const
 	{
 	  int size = cell->size();
-	  float last_fitness = 1;  //worste fitness value of the cell
+      // Why init it to "1"?! (Probably all fitness values in the experiments are negative, but still...)
+	  float least_fitness = 1;  //worst fitness value of the cell
 	  std::vector<float> fitness(size); //relative fitness of each element of the cell
 	  float total_fitness = 0; //sum of all relative fitnesses
 	  for(size_t i=0; i<size; i++)
 	    {
 	      fitness[i] = cell->operator[](i)->fit().value();
-	      last_fitness = std::min(last_fitness, fitness[i]);
+	      least_fitness = std::min(least_fitness, fitness[i]);
 	    }
 	  for(size_t i=0; i<size; i++)
 	    {
-	      fitness[i] -= last_fitness;
+	      fitness[i] -= least_fitness;
 	      total_fitness += fitness[i];
 	    }
 	  return {total_fitness, fitness};
@@ -48,7 +49,7 @@ namespace sferes {
 	  return indiv_num;
 	}
 
-	// Fitness proportionate
+	// Fitness proportionate    // (called with results from relative_fitness() above)
 	int select_prop(int size, std::vector<float> relative_fit, float total_fit) const
 	{
           if (size == 1)
@@ -66,9 +67,32 @@ namespace sferes {
 	      value += relative_fit[indiv_num];
 	    }
 	  return indiv_num;
+
+      // Code-Reading:
+      // (Assuming fitnesses are negative, see std::min() comment far above.)
+      //
+      // This returns a random choice weighted by how much better its fitness
+      // is compared to the worst fitness within the same cell.
+      //
+      // Consequences:
+      // - If the cell members have uniformly distributed fitness:
+      //     It returns with 75% probability a member of the better half.
+      // - If there exists a single, really really really bad individuum:
+      //     It gives equal probability to all others. (Ignoring their relative fitness.)
+      //     (If mutations have a small chance to be really bad, this may happen in practice.)
+      //     (Would be really bad for the algo IMO.)
+      // - If there exists a single, really really really good individuum:
+      //     It returns it, ignoring all other fitnesses.
+      //     (Elitism; Should be fine, considering that the algo randomly replaces a individuum.)
+      //
+      // Comment: Probably fitness should be rank-normalized first?! And then
+      // reweighted somehow, similar to the cannonical ES...? Do a softmax choice?
+      // Not sure exactly how. But rank-normalization would certainly be preferred.
+      // The algo as-is drops the invariance to most fitness transforms.
 	}
 	
-	// Fitness exponentially proportionate
+
+	// Fitness exponentially proportionate   // (never called)
 	int select_exp(int size, std::vector<float> relative_fit, float total_fit) const
 	{
           if (size == 1)

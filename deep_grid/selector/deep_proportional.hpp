@@ -32,7 +32,7 @@ namespace sferes {
 	      // Choose a random indiv proportionnaly to the fitness inside it
 	      size_t size = cell->size();
 	      if (size > 1)
-	      {
+	      {  // <---
 		 std::tuple<float, std::vector<float>> fitness = this->relative_fitness(cell);
 	         indiv = cell->operator[](this->select_prop(size, std::get<1>(fitness), std::get<0>(fitness)));
 	      }
